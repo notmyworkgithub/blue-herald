@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: Enhanced Enterprise Employee Announcement Tool API
+  description: Microsoft Graph API contracts for enterprise announcement management
+  version: 1.0.0
+  contact:
+    name: Blue Herald Development Team
+
+servers:
+  - url: https://graph.microsoft.com/v1.0
+    description: Microsoft Graph API v1.0
+
+paths:
+  /sites/{site-id}/lists/{announcements-list-id}/items:
+    get:
+      summary: List announcements
+      description: Retrieve announcements with filtering and pagination
+      tags:
+        - Announcements
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SharePoint site identifier
+        - name: announcements-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Announcements list identifier
+        - name: $filter
+          in: query
+          schema:
+            type: string
+          description: OData filter expression
+          example: "fields/Status eq 'Published'"
+        - name: $orderby
+          in: query
+          schema:
+            type: string
+          description: OData order by expression
+          example: "fields/PublishedDate desc"
+        - name: $top
+          in: query
+          schema:
+            type: integer
+          description: Number of items to return
+          example: 50
+        - name: $expand
+          in: query
+          schema:
+            type: string
+          description: Expand related fields
+          example: "fields"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementListResponse'
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Forbidden - insufficient permissions
+        '404':
+          description: Site or list not found
+
+    post:
+      summary: Create announcement
+      description: Create new announcement in draft status
+      tags:
+        - Announcements
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: announcements-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnnouncementRequest'
+      responses:
+        '201':
+          description: Announcement created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementResponse'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Forbidden - insufficient permissions
+
+  /sites/{site-id}/lists/{announcements-list-id}/items/{item-id}:
+    get:
+      summary: Get announcement by ID
+      description: Retrieve specific announcement details
+      tags:
+        - Announcements
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: announcements-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: item-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: $expand
+          in: query
+          schema:
+            type: string
+          description: Expand related fields
+          example: "fields"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementResponse'
+        '401':
+          description: Unauthorized access
+        '404':
+          description: Announcement not found
+
+    patch:
+      summary: Update announcement
+      description: Update announcement fields (respects status-based permissions)
+      tags:
+        - Announcements
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: announcements-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: item-id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAnnouncementRequest'
+      responses:
+        '200':
+          description: Announcement updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementResponse'
+        '400':
+          description: Invalid request data
+        '401':
+          description: Unauthorized access
+        '403':
+          description: Forbidden - cannot modify in current status
+        '404':
+          description: Announcement not found
+
+  /sites/{site-id}/lists/{approval-workflows-list-id}/items:
+    get:
+      summary: List approval workflows
+      description: Retrieve approval workflows for current user
+      tags:
+        - Approvals
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: approval-workflows-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: $filter
+          in: query
+          schema:
+            type: string
+          description: Filter for user's approvals
+          example: "fields/ApproverEmail eq 'user@company.com' and fields/Status eq 'Pending'"
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalWorkflowListResponse'
+
+    post:
+      summary: Create approval workflow
+      description: Submit announcement for approval
+      tags:
+        - Approvals
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: approval-workflows-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApprovalWorkflowRequest'
+      responses:
+        '201':
+          description: Approval workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalWorkflowResponse'
+
+  /sites/{site-id}/lists/{approval-workflows-list-id}/items/{item-id}:
+    patch:
+      summary: Update approval decision
+      description: Approve or reject announcement
+      tags:
+        - Approvals
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: approval-workflows-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: item-id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecisionRequest'
+      responses:
+        '200':
+          description: Approval decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalWorkflowResponse'
+
+  /sites/{site-id}/lists/{audit-records-list-id}/items:
+    post:
+      summary: Create audit record
+      description: Log user action for compliance
+      tags:
+        - Audit
+      parameters:
+        - name: site-id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: audit-records-list-id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuditRecordRequest'
+      responses:
+        '201':
+          description: Audit record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditRecordResponse'
+
+  /me:
+    get:
+      summary: Get current user profile
+      description: Retrieve current user information from Azure AD
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /users/{user-id}/manager:
+    get:
+      summary: Get user's manager
+      description: Retrieve manager information for approval routing
+      tags:
+        - Users
+      parameters:
+        - name: user-id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User's Azure AD object ID or email
+      responses:
+        '200':
+          description: Manager information retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: Manager not found
+
+components:
+  schemas:
+    AnnouncementListResponse:
+      type: object
+      properties:
+        '@odata.context':
+          type: string
+        '@odata.nextLink':
+          type: string
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnouncementResponse'
+
+    AnnouncementResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        fields:
+          $ref: '#/components/schemas/AnnouncementFields'
+        createdDateTime:
+          type: string
+          format: date-time
+        lastModifiedDateTime:
+          type: string
+          format: date-time
+
+    AnnouncementFields:
+      type: object
+      properties:
+        Title:
+          type: string
+          maxLength: 200
+        Message:
+          type: string
+        CommunicationType:
+          type: string
+          enum: [Policy Update, Company News, Team Announcement, Benefits Update]
+        Audience:
+          type: string
+          enum: [All Staff, Department, Team]
+        Tone:
+          type: string
+          enum: [Formal, Friendly, Urgent, Celebratory]
+        Status:
+          type: string
+          enum: [Draft, Pending Approval, Approved, Rejected, Published, Archived]
+        TypeSpecificData:
+          type: string
+          description: JSON string containing type-specific fields
+        PublishedDate:
+          type: string
+          format: date-time
+          nullable: true
+        ScheduledDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateAnnouncementRequest:
+      type: object
+      required:
+        - fields
+      properties:
+        fields:
+          type: object
+          required:
+            - Title
+            - Message
+            - CommunicationType
+            - Audience
+            - Tone
+          properties:
+            Title:
+              type: string
+              maxLength: 200
+            Message:
+              type: string
+            CommunicationType:
+              type: string
+              enum: [Policy Update, Company News, Team Announcement, Benefits Update]
+            Audience:
+              type: string
+              enum: [All Staff, Department, Team]
+            Tone:
+              type: string
+              enum: [Formal, Friendly, Urgent, Celebratory]
+            Status:
+              type: string
+              enum: [Draft]
+              default: Draft
+            TypeSpecificData:
+              type: string
+              description: JSON string with type-specific fields
+
+    UpdateAnnouncementRequest:
+      type: object
+      required:
+        - fields
+      properties:
+        fields:
+          type: object
+          properties:
+            Title:
+              type: string
+              maxLength: 200
+            Message:
+              type: string
+            CommunicationType:
+              type: string
+              enum: [Policy Update, Company News, Team Announcement, Benefits Update]
+            Audience:
+              type: string
+              enum: [All Staff, Department, Team]
+            Tone:
+              type: string
+              enum: [Formal, Friendly, Urgent, Celebratory]
+            Status:
+              type: string
+              enum: [Draft, Pending Approval, Approved, Rejected, Published, Archived]
+            TypeSpecificData:
+              type: string
+
+    ApprovalWorkflowListResponse:
+      type: object
+      properties:
+        '@odata.context':
+          type: string
+        value:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalWorkflowResponse'
+
+    ApprovalWorkflowResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        fields:
+          $ref: '#/components/schemas/ApprovalWorkflowFields'
+
+    ApprovalWorkflowFields:
+      type: object
+      properties:
+        Title:
+          type: string
+        AnnouncementId:
+          type: number
+        ApproverEmail:
+          type: string
+        Status:
+          type: string
+          enum: [Pending, Approved, Rejected, Reassigned]
+        Decision:
+          type: string
+          enum: [Approved, Rejected]
+          nullable: true
+        Comments:
+          type: string
+          nullable: true
+        DecisionDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateApprovalWorkflowRequest:
+      type: object
+      required:
+        - fields
+      properties:
+        fields:
+          type: object
+          required:
+            - AnnouncementId
+            - ApproverEmail
+          properties:
+            Title:
+              type: string
+            AnnouncementId:
+              type: number
+            ApproverEmail:
+              type: string
+            Status:
+              type: string
+              enum: [Pending]
+              default: Pending
+
+    ApprovalDecisionRequest:
+      type: object
+      required:
+        - fields
+      properties:
+        fields:
+          type: object
+          required:
+            - Status
+            - Decision
+          properties:
+            Status:
+              type: string
+              enum: [Approved, Rejected]
+            Decision:
+              type: string
+              enum: [Approved, Rejected]
+            Comments:
+              type: string
+            DecisionDate:
+              type: string
+              format: date-time
+
+    CreateAuditRecordRequest:
+      type: object
+      required:
+        - fields
+      properties:
+        fields:
+          type: object
+          required:
+            - UserEmail
+            - Action
+            - EntityType
+            - EntityId
+          properties:
+            Title:
+              type: string
+            UserEmail:
+              type: string
+            Action:
+              type: string
+            EntityType:
+              type: string
+            EntityId:
+              type: string
+            Details:
+              type: string
+              description: JSON string with action details
+            SessionInfo:
+              type: string
+              description: JSON string with session metadata
+
+    AuditRecordResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        fields:
+          type: object
+          properties:
+            Title:
+              type: string
+            UserEmail:
+              type: string
+            Action:
+              type: string
+            EntityType:
+              type: string
+            EntityId:
+              type: string
+            Details:
+              type: string
+            SessionInfo:
+              type: string
+        createdDateTime:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Azure AD object ID
+        mail:
+          type: string
+        displayName:
+          type: string
+        givenName:
+          type: string
+        surname:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        officeLocation:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Azure AD access token
+
+security:
+  - BearerAuth: []
